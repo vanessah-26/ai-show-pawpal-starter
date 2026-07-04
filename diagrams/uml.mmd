@@ -1,15 +1,82 @@
 classDiagram
-    %% Replace the placeholders below with your actual classes, attributes, methods, and relationships.
-    %% Keep this file updated so it matches your final implementation.
-
-    class ClassName {
-        +type attribute
-        +method() returnType
+    class User {
+        +String user_id
+        +String name
+        +String available_time_start
+        +String available_time_end
+        +dict preferences
+        +String timezone
+        +get_available_minutes() int
+        +update_availability(start, end) None
+        +add_preference(key, value) None
+        +remove_preference(key) None
     }
 
-    class AnotherClass {
-        +type attribute
-        +method() returnType
+    class Pet {
+        +String pet_id
+        +String name
+        +String species
+        +String breed
+        +int age_years
+        +float weight_lbs
+        +String notes
+        +dict care_constraints
+        +update_profile() None
+        +add_constraint(key, value) None
+        +summary() String
     }
 
-    ClassName --> AnotherClass : relationship
+    class Task {
+        +String task_id
+        +String name
+        +String category
+        +int duration_min
+        +int priority
+        +String frequency
+        +String fixed_start_time
+        +String earliest_start
+        +String latest_end
+        +bool can_split
+        +String notes
+        +String pet_id
+        +bool active
+        +is_fixed_time() bool
+        +requires_time_window() bool
+        +fits_in_window(start_time, end_time) bool
+        +update() None
+        +to_dict() dict
+        +from_dict(data)$ Task
+    }
+
+    class Scheduler {
+        +User user
+        +Pet pet
+        +List~Task~ tasks
+        +List schedule
+        +List~String~ explanations
+        +add_task(task) None
+        +edit_task(task_id) None
+        +remove_task(task_id) None
+        +generate_daily_plan(date) List
+        +sort_tasks(tasks) List~Task~
+        +validate_no_overlap(plan) bool
+        +validate_fits_availability(plan) bool
+        +validate_all_required_scheduled(plan) bool
+        +reject_if_impossible() None
+        +explain_plan(plan) String
+    }
+
+    class ScheduledItem {
+        +Task task
+        +String start
+        +String end
+        +overlaps(other) bool
+        +duration() int
+    }
+
+    Scheduler "1" --> "1" User : has
+    Scheduler "1" --> "0..1" Pet : has
+    Scheduler "1" --> "*" Task : manages
+    Scheduler "1" --> "*" ScheduledItem : produces
+    ScheduledItem "1" --> "1" Task : wraps
+    Pet "1" ..> "0..*" Task : pet_id ref
