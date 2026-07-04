@@ -31,12 +31,29 @@ The purpose of each class:
 **a. Constraints and priorities**
 
 - What constraints does your scheduler consider (for example: time, priority, preferences)?
+1. Time availability: the owner's available_time_start and available_time_end bound every task; nothing can be scheduled outside that window
+2. Fixed start time: tasks with fixed_start_time are anchored to an exact slot and placed first before anything else
+3. Time windows: earliest_start and latest_end give flexible tasks a range they must fit within
+4. Priority: among flexible tasks, higher priority tasks are placed before lower ones when time is limited
+5. Duration: tasks that don't fit remaining availability are skipped rather than truncated
+6. Completion status: completed tasks are excluded from scheduling so the plan only shows what's left to do
+7. Recurring frequency: daily, weekly, and 2x/day tasks affect how many slots are generated and when the next occurrence is created
+
 - How did you decide which constraints mattered most?
+1. Fixed time first: some tasks have no flexibility (medication at a specific hour); getting those wrong breaks real-world care, so they anchor the schedule before anything else is placed
+2. Priority over duration: a 5-minute high-priority task (meds) should never be bumped for a 45-minute low-priority task (grooming); priority determines ordering, duration determines fit
+3. Availability as a hard boundary: unlike priority which ranks preferences, the owner's availability is a hard limit; violating it makes the schedule useless, so reject_if_impossible enforces it before any planning starts
+4. Completion status added later: this constraint only matters once the app is used across a real day rather than generating a one-shot plan, so it was the right call to add it after the core scheduler worked
+
 
 **b. Tradeoffs**
 
 - Describe one tradeoff your scheduler makes.
+The genereate daily plan triggers active task multiple times. For a small task list, it's not a big issue, but for longer list it can be inefficient. There were two options to go about this: 
+First, cache it: invalidate on add_task, remove_task, or mark_task_complete
+Or second, maintain a secodn dict: this keeps the active dict insync 
 - Why is that tradeoff reasonable for this scenario?
+Caching is fine for now, and assuming the daily tasks is around 10 tasks, that wouldn't be an issue for this version 1. There are other critical things which impact the quality of the app so I'd prioritize fixing them first. 
 
 ---
 
