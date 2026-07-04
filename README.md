@@ -49,14 +49,14 @@ Paste a sample of your app's CLI or Streamlit output here so a reader can see wh
 ```
 # e.g.:
 # Daily plan for Biscuit (Golden Retriever):
-#   08:00 — Morning walk (30 min) [priority: high]
-#   09:00 — Feeding (10 min) [priority: high]
+#   08:00, Morning walk (30 min) [priority: high]
+#   09:00, Feeding (10 min) [priority: high]
 #   ...
 ``` -->
 
 ```
 ============================================
-       PawPal+  —  Today's Schedule
+       PawPal+: Today's Schedule
 ============================================
   Owner : Alex
   Pets  : Buddy (dog, Labrador, 4yr, 65.0lbs), Mochi (cat, Siamese, 2yr)
@@ -98,14 +98,19 @@ Sample test output:
 
 ## 📐 Smarter Scheduling
 
-> Fill in once you've implemented scheduling logic.
-
 | Feature | Method(s) | Notes |
 |---------|-----------|-------|
-| Task sorting | | e.g., by priority, duration |
-| Filtering | | e.g., skip tasks if time runs out |
-| Conflict handling | | e.g., overlapping time slots |
-| Recurring tasks | | e.g., daily vs. weekly |
+| **Sort by priority / duration** | `Scheduler.sort_tasks()` | Fixed-time tasks always first, then priority descending, then shorter duration as tiebreaker |
+| **Sort by time of day** | `Scheduler.sort_by_time()` | Lambda key on `fixed_start_time or earliest_start or "23:59"`, HH:MM strings are lexicographically ordered so no parsing needed |
+| **Filter by pet** | `Scheduler.tasks_for_pet(pet_id)` | Returns active tasks whose `pet_id` matches; use with `Pet.pet_id` |
+| **Filter by pet name** | `Scheduler.filter_by_pet_name(name)` | Case-insensitive name lookup; resolves to `pet_id` set before filtering |
+| **Filter by completion status** | `Scheduler.tasks_by_status(completed)` | Pass `completed=True` for done tasks, `False` for pending |
+| **Conflict detection (raw)** | `Scheduler.detect_fixed_time_conflicts()` | Returns `list[tuple[Task, Task]]` of overlapping fixed-time pairs |
+| **Conflict detection (warnings)** | `Scheduler.conflict_warnings()` | Returns human-readable warning strings; checks overlaps, single task too long, and total overbooking never raises |
+| **Recurring tasks (same day)** | `Scheduler._expand_recurring_tasks()` | Expands `frequency="2x/day"` tasks into two slots before the greedy placer runs |
+| **Recurring tasks (next day/week)** | `Scheduler.mark_task_complete(task_id)` | Marks a task done and auto-creates the next occurrence using `timedelta(days=1)` or `timedelta(weeks=1)` |
+| **Greedy slot placement** | `Scheduler.generate_daily_plan()` | Places fixed-time tasks first, then advances a candidate pointer through `bisect`-sorted occupied slots, O(n log n) |
+| **Overlap validation** | `Scheduler.validate_no_overlap(plan)` | Adjacent-pair check on sorted plan, O(n) instead of O(n²) all-pairs |
 
 ## 📸 Demo Walkthrough
 
