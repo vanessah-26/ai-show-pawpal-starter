@@ -1,38 +1,15 @@
 from pawpal_system import User, Pet, Task, Scheduler
 
-# ── Owner ────────────────────────────────────────────────────────────────────
+# ── Owner & Pets ──────────────────────────────────────────────────────────────
 
-owner = User(
-    name="Alex",
-    available_time_start="08:00",
-    available_time_end="18:00",
-)
-
-# ── Pets ─────────────────────────────────────────────────────────────────────
-
-buddy = Pet(
-    name="Buddy",
-    species="dog",
-    breed="Labrador",
-    age_years=4,
-    weight_lbs=65.0,
-    care_constraints={"max_walk_minutes": 45},
-)
-
-mochi = Pet(
-    name="Mochi",
-    species="cat",
-    breed="Siamese",
-    age_years=2,
-    notes="Anxious around loud noises",
-)
-
-# ── Scheduler ─────────────────────────────────────────────────────────────────
+owner = User(name="Alex", available_time_start="08:00", available_time_end="18:00")
+buddy = Pet(name="Buddy", species="dog", pet_id="buddy", breed="Labrador", age_years=4)
+mochi = Pet(name="Mochi", species="cat", pet_id="mochi", breed="Siamese", age_years=2)
 
 scheduler = Scheduler(user=owner, pet=buddy)
 scheduler.add_pet(mochi)
 
-# ── Tasks ─────────────────────────────────────────────────────────────────────
+# ── Normal tasks ──────────────────────────────────────────────────────────────
 
 scheduler.add_task(Task(
     task_id="t1",
@@ -40,7 +17,7 @@ scheduler.add_task(Task(
     category="walk",
     duration_min=30,
     priority=5,
-    pet_id=buddy.pet_id,
+    pet_id="buddy",
     fixed_start_time="08:00",
 ))
 
@@ -50,10 +27,14 @@ scheduler.add_task(Task(
     category="feeding",
     duration_min=10,
     priority=5,
-    pet_id=mochi.pet_id,
+    pet_id="mochi",
     earliest_start="08:30",
     latest_end="09:30",
 ))
+
+# ── Conflicting tasks (same fixed time) ───────────────────────────────────────
+# Buddy Medication starts at 08:00 — same as Morning Walk (30 min), so they overlap.
+# Grooming also starts at 08:10, which falls inside Morning Walk's window.
 
 scheduler.add_task(Task(
     task_id="t3",
@@ -61,48 +42,64 @@ scheduler.add_task(Task(
     category="meds",
     duration_min=5,
     priority=5,
-    pet_id=buddy.pet_id,
-    fixed_start_time="09:00",
+    pet_id="buddy",
+    fixed_start_time="08:00",   # conflicts with Morning Walk (08:00–08:30)
 ))
 
 scheduler.add_task(Task(
     task_id="t4",
-    name="Afternoon Walk",
-    category="walk",
-    duration_min=45,
-    priority=4,
-    pet_id=buddy.pet_id,
-    earliest_start="15:00",
-    latest_end="17:00",
-))
-
-scheduler.add_task(Task(
-    task_id="t5",
     name="Grooming",
     category="grooming",
     duration_min=20,
     priority=2,
-    pet_id=buddy.pet_id,
+    pet_id="buddy",
+    fixed_start_time="08:10",   # also conflicts with Morning Walk (08:00–08:30)
 ))
 
-# ── Generate & Print ──────────────────────────────────────────────────────────
+# ── Conflict Detection ────────────────────────────────────────────────────────
+
+print("=" * 52)
+print("  Conflict Warnings")
+print("=" * 52)
+
+warnings = scheduler.conflict_warnings()
+
+if warnings:
+    for w in warnings:
+        print(f"  {w}")
+else:
+    print("  No conflicts detected.")
+
+# ── Show what a clean schedule looks like without the conflicting tasks ────────
+
+print()
+print("=" * 52)
+print("  Removing conflicting tasks and rescheduling")
+print("=" * 52)
+
+scheduler.remove_task("t3")   # deactivate Buddy Medication
+scheduler.remove_task("t4")   # deactivate Grooming
+
+warnings_after = scheduler.conflict_warnings()
+print(f"  Warnings after fix: {len(warnings_after)} (cleared)")
+
+scheduler.add_task(Task(
+    task_id="t3b",
+    name="Buddy Medication",
+    category="meds",
+    duration_min=5,
+    priority=5,
+    pet_id="buddy",
+    fixed_start_time="09:00",   # moved to a clear slot
+))
 
 plan = scheduler.generate_daily_plan()
 
-print("=" * 44)
-print("       PawPal+  —  Today's Schedule")
-print("=" * 44)
-print(f"  Owner : {owner.name}")
-print(f"  Pets  : {buddy.summary()}, {mochi.summary()}")
-print(f"  Hours : {owner.available_time_start} – {owner.available_time_end}")
-print("-" * 44)
-
-for item in plan:
-    pet_label = f"[{item.task.pet_id}] " if item.task.pet_id else ""
-    print(f"  {item.start} – {item.end}  {pet_label}{item.task.name}")
-
-print("-" * 44)
-print(f"  {len(plan)} of {len(scheduler.active_tasks)} tasks scheduled")
 print()
-print(scheduler.explain_plan(plan))
-print("=" * 44)
+print("=" * 52)
+print("  PawPal+  —  Today's Schedule (conflict-free)")
+print("=" * 52)
+for item in plan:
+    print(f"  {item.start} – {item.end}  [{item.task.pet_id}] {item.task.name}")
+print(f"  {len(plan)} tasks scheduled")
+print("=" * 52)
