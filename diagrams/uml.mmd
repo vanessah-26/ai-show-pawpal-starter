@@ -40,6 +40,7 @@ classDiagram
         +String notes
         +String pet_id
         +bool active
+        +bool completed
         +is_fixed_time() bool
         +requires_time_window() bool
         +fits_in_window(start_time, end_time) bool
@@ -50,10 +51,11 @@ classDiagram
 
     class Scheduler {
         +User user
-        +Pet pet
+        +List~Pet~ pets
         +List~Task~ tasks
         +List schedule
         +List~String~ explanations
+        +add_pet(pet) None
         +add_task(task) None
         +edit_task(task_id) None
         +remove_task(task_id) None
@@ -75,7 +77,7 @@ classDiagram
     }
 
     Scheduler "1" --> "1" User : has
-    Scheduler "1" --> "0..1" Pet : has
+    Scheduler "1" --> "*" Pet : has
     Scheduler "1" --> "*" Task : manages
     Scheduler "1" --> "*" ScheduledItem : produces
     ScheduledItem "1" --> "1" Task : wraps

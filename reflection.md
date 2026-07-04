@@ -7,11 +7,23 @@
 - Briefly describe your initial UML design.
 - What classes did you include, and what responsibilities did you assign to each?
 
+The classes I chose include:
+- User, Pet, Task, Scheduler
+
+The purpose of each class:
+- User: Stores the pet owner’s info + availability constraints.
+- Pet: Stores pet details that can affect tasks (meds, age, energy level, etc)
+- Task: Represents one care activity with scheduling requirements.
+- Scheduler: Core logic: takes user availability + tasks and returns a daily plan (and can generate explanations + validate schedules for tests).
+
 **b. Design changes**
 
 - Did your design change during implementation?
 - If yes, describe at least one change and why you made it.
 
+1. I changed the type of available start time and fixed start time from string to "HH:MM" strings format, and added a helper function to validate that. This is for better datetime parsing 
+
+2. Changed Task from list to dict type for more efficient lookup time. The initial suggestion from AI was list, so if scanning every task_id throuhg the whole list, it would be O(n) every single call. Use dict and look up task_id as a key would make it to be O(1)
 ---
 
 ## 2. Scheduling Logic and Tradeoffs
