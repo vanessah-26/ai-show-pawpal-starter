@@ -42,44 +42,6 @@ pip install -r requirements.txt
 6. Connect your logic to the Streamlit UI in `app.py`.
 7. Refine UML so it matches what you actually built.
 
-## 🖥️ Sample Output
-
-Paste a sample of your app's CLI or Streamlit output here so a reader can see what a generated plan looks like:
-<!-- 
-```
-# e.g.:
-# Daily plan for Biscuit (Golden Retriever):
-#   08:00, Morning walk (30 min) [priority: high]
-#   09:00, Feeding (10 min) [priority: high]
-#   ...
-``` -->
-
-```
-============================================
-       PawPal+: Today's Schedule
-============================================
-  Owner : Alex
-  Pets  : Buddy (dog, Labrador, 4yr, 65.0lbs), Mochi (cat, Siamese, 2yr)
-  Hours : 08:00 – 18:00
---------------------------------------------
-  08:00 – 08:30  Morning Walk
-  08:30 – 08:40  Mochi Feeding
-  08:40 – 09:00  Grooming
-  09:00 – 09:05  Buddy Medication
-  15:00 – 15:45  Afternoon Walk
---------------------------------------------
-  5 of 5 tasks scheduled
-
-Daily plan:
-  08:00–08:30  Morning Walk  ← fixed time
-  08:30–08:40  Mochi Feeding  ← high priority, time window
-  08:40–09:00  Grooming
-  09:00–09:05  Buddy Medication  ← fixed time
-  15:00–15:45  Afternoon Walk  ← high priority, time window
-============================================
-```
-
-
 ## 🧪 Testing PawPal+
 
 ```bash
@@ -301,12 +263,51 @@ TOTAL                280      1    99%
 
 ## 📸 Demo Walkthrough
 
-Describe your app in numbered steps so a reader can follow along without watching a video:
+### UI features
+The Streamlit app has four sections:
 
-1. <!-- Describe this step -->
-2. <!-- Describe this step -->
-3. <!-- Describe this step -->
-4. <!-- Describe this step -->
-5. <!-- Add more steps as needed -->
+- **Owner Setup** — enter name and availability window (`08:00`–`18:00`). Initializes the scheduler.
+- **Add a Pet** — add pets with name, species, optional breed. Each gets a `pet_id` used to link tasks.
+- **Add a Task** — set name, category, duration, priority (1–5), optional fixed start time, and pet. Task table updates immediately sorted by scheduling priority; conflict warnings appear live below.
+- **Generate Schedule** — disabled when conflicts exist. Produces a conflict-free plan with priority badges (🔴 high / 🟡 medium / 🔵 low), ✓ Done buttons, and a collapsible explanation panel.
 
-**Screenshot or video** *(optional)*: <!-- Insert a screenshot or link to a demo video here -->
+### Example flow
+
+1. Save owner **Jordan**, available `08:00`–`18:00`
+2. Add pet **Buddy** (dog)
+3. Add task: *Morning Walk*, 30 min, priority 5, fixed at `08:00`
+4. Add task: *Feeding*, 10 min, priority 4, assigned to Buddy
+5. Add task: *Grooming*, 20 min, priority 2
+6. Click **Generate Schedule** → plan appears in chronological order
+7. Click **✓ Done** on Morning Walk → it grays out; next daily occurrence is queued
+
+### Key scheduler behaviors shown
+
+- **Conflict warnings** appear the moment two fixed-time tasks overlap and block the Generate button until resolved
+- **Priority sorting** ensures high-priority tasks claim slots before low-priority ones
+- **Skipped-task notice** reports how many tasks couldn't fit their time window constraints
+- **explain_plan** annotates each slot with the reason it was placed there (fixed time / high priority / time window)
+
+### Sample CLI output (`python main.py`)
+
+```
+====================================================
+  Conflict Warnings
+====================================================
+  ⚠ Time conflict: 'Morning Walk' (08:00, 30 min) overlaps 'Buddy Medication' (08:00, 5 min)
+  ⚠ Time conflict: 'Morning Walk' (08:00, 30 min) overlaps 'Grooming' (08:10, 20 min)
+
+====================================================
+  Removing conflicting tasks and rescheduling
+====================================================
+  Warnings after fix: 0 (cleared)
+
+====================================================
+  PawPal+  —  Today's Schedule (conflict-free)
+====================================================
+  08:00 – 08:30  [buddy] Morning Walk
+  08:30 – 08:40  [mochi] Mochi Feeding
+  09:00 – 09:05  [buddy] Buddy Medication
+  3 tasks scheduled
+====================================================
+```

@@ -135,19 +135,34 @@ else:
         except ValueError as e:
             st.error(str(e))
 
-    active = st.session_state.scheduler.active_tasks if st.session_state.scheduler else []
+    scheduler = st.session_state.scheduler
+    active = scheduler.active_tasks if scheduler else []
     if active:
-        st.write("**Current tasks:**")
+        # Sort by scheduling priority so the table matches what generate_daily_plan will do:
+        # fixed-time tasks first, then highest priority, then shortest duration.
+        sorted_active = scheduler.sort_tasks(active)
+        st.write("**Current tasks** (sorted by scheduling priority):")
         st.table([
             {
                 "Task": t.name,
                 "Category": t.category,
                 "Duration (min)": t.duration_min,
-                "Priority": t.priority,
+                "Priority": "⭐" * t.priority,
                 "Fixed time": t.fixed_start_time or "—",
+                "Earliest": t.earliest_start or "—",
+                "Latest end": t.latest_end or "—",
             }
-            for t in active
+            for t in sorted_active
         ])
+
+        # Show conflict warnings immediately so the owner can fix issues before generating.
+        warnings = scheduler.conflict_warnings()
+        if warnings:
+            st.markdown("**⚠️ Scheduling issues detected — fix these before generating:**")
+            for w in warnings:
+                st.warning(w)
+        else:
+            st.success("No scheduling conflicts — ready to generate.")
     else:
         st.info("No tasks added yet.")
 
@@ -159,45 +174,64 @@ st.subheader("4. Generate Schedule")
 if not st.session_state.scheduler or not st.session_state.scheduler.tasks:
     st.warning("Add an owner and at least one task before generating a schedule.")
 else:
-    if st.button("Generate schedule"):
+    scheduler = st.session_state.scheduler
+
+    # Block generation if there are conflicts — show them as actionable warnings.
+    pre_warnings = scheduler.conflict_warnings()
+    if pre_warnings:
+        st.markdown("**Resolve these conflicts before generating:**")
+        for w in pre_warnings:
+            st.warning(w)
+
+    generate_disabled = bool(pre_warnings)
+    if st.button("Generate schedule", disabled=generate_disabled):
         try:
-            st.session_state.plan = st.session_state.scheduler.generate_daily_plan()
-            st.success(f"Scheduled {len(st.session_state.plan)} tasks.")
+            st.session_state.plan = scheduler.generate_daily_plan()
+            total_active = len(scheduler.active_tasks)
+            scheduled = len(st.session_state.plan)
+            if scheduled == total_active:
+                st.success(f"All {scheduled} tasks scheduled.")
+            else:
+                skipped = total_active - scheduled
+                st.warning(
+                    f"{scheduled} of {total_active} tasks scheduled — "
+                    f"{skipped} task(s) were skipped because they couldn't fit "
+                    f"within your availability or time window constraints."
+                )
         except ValueError as e:
             st.error(str(e))
 
     if st.session_state.plan:
-        scheduler = st.session_state.scheduler
         completed_tasks = scheduler.tasks_by_status(completed=True)
-        planned_ids = {item.task.task_id for item in st.session_state.plan}
+        completed_ids = {t.task_id for t in completed_tasks}
 
         st.markdown("**Today's Schedule:**")
 
-        # pending tasks from the plan
         for item in st.session_state.plan:
+            is_done = item.task.task_id in completed_ids
             col1, col2 = st.columns([5, 1])
             with col1:
-                st.markdown(
-                    f"`{item.start} – {item.end}` &nbsp; **{item.task.name}** "
-                    f"<span style='color:gray;font-size:12px'>({item.task.category}, {item.duration()} min)</span>",
-                    unsafe_allow_html=True,
-                )
+                # Colour-code the time slot by priority: high (>=4) gets a warm tint label.
+                priority_badge = " 🔴" if item.task.priority >= 4 else (" 🟡" if item.task.priority == 3 else " 🔵")
+                if is_done:
+                    st.markdown(
+                        f"<div style='opacity:0.4;text-decoration:line-through;font-size:15px'>"
+                        f"<code>{item.start} – {item.end}</code> &nbsp; {item.task.name}"
+                        f"</div>",
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    st.markdown(
+                        f"`{item.start} – {item.end}` &nbsp; **{item.task.name}**{priority_badge} "
+                        f"<span style='color:gray;font-size:12px'>({item.task.category}, {item.duration()} min)</span>",
+                        unsafe_allow_html=True,
+                    )
             with col2:
-                if st.button("✓ Done", key=f"done_{item.task.task_id}"):
-                    scheduler.tasks[item.task.task_id].mark_complete()
-                    st.rerun()
-
-        # completed tasks shown faded below
-        if completed_tasks:
-            st.markdown("---")
-            for task in completed_tasks:
-                st.markdown(
-                    f"<div style='opacity:0.38;text-decoration:line-through;font-size:14px'>"
-                    f"✓ &nbsp; <code>completed</code> &nbsp; {task.name}"
-                    f"</div>",
-                    unsafe_allow_html=True,
-                )
+                if not is_done:
+                    if st.button("✓ Done", key=f"done_{item.task.task_id}"):
+                        scheduler.tasks[item.task.task_id].mark_complete()
+                        st.rerun()
 
         st.markdown("")
-        st.markdown("**Explanation:**")
-        st.text(scheduler.explain_plan(st.session_state.plan))
+        with st.expander("Why was each task placed here?"):
+            st.text(scheduler.explain_plan(st.session_state.plan))

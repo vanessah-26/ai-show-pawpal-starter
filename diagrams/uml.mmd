@@ -21,7 +21,7 @@ classDiagram
         +float weight_lbs
         +String notes
         +dict care_constraints
-        +update_profile() None
+        +update_profile(**kwargs) None
         +add_constraint(key, value) None
         +summary() String
     }
@@ -41,31 +41,14 @@ classDiagram
         +String pet_id
         +bool active
         +bool completed
+        +String due_date
+        +mark_complete() None
         +is_fixed_time() bool
         +requires_time_window() bool
         +fits_in_window(start_time, end_time) bool
-        +update() None
+        +update(**kwargs) None
         +to_dict() dict
         +from_dict(data)$ Task
-    }
-
-    class Scheduler {
-        +User user
-        +List~Pet~ pets
-        +List~Task~ tasks
-        +List schedule
-        +List~String~ explanations
-        +add_pet(pet) None
-        +add_task(task) None
-        +edit_task(task_id) None
-        +remove_task(task_id) None
-        +generate_daily_plan(date) List
-        +sort_tasks(tasks) List~Task~
-        +validate_no_overlap(plan) bool
-        +validate_fits_availability(plan) bool
-        +validate_all_required_scheduled(plan) bool
-        +reject_if_impossible() None
-        +explain_plan(plan) String
     }
 
     class ScheduledItem {
@@ -76,8 +59,36 @@ classDiagram
         +duration() int
     }
 
+    class Scheduler {
+        +User user
+        +List~Pet~ pets
+        +Dict~String_Task~ tasks
+        +List~ScheduledItem~ schedule
+        +List~String~ explanations
+        +active_tasks List~Task~
+        +add_pet(pet) None
+        +add_task(task) None
+        +edit_task(task_id, **updates) None
+        +remove_task(task_id) None
+        +tasks_for_pet(pet_id) List~Task~
+        +tasks_by_status(completed) List~Task~
+        +mark_task_complete(task_id, today) Task
+        +generate_daily_plan(date) List~ScheduledItem~
+        +sort_tasks(tasks) List~Task~
+        +sort_by_time(tasks) List~Task~
+        +filter_by_pet_name(name) List~Task~
+        +detect_fixed_time_conflicts() List
+        +conflict_warnings() List~String~
+        +validate_no_overlap(plan) bool
+        +validate_fits_availability(plan) bool
+        +validate_all_required_scheduled(plan) bool
+        +reject_if_impossible() None
+        +explain_plan(plan) String
+        -_expand_recurring_tasks(tasks) List~Task~
+    }
+
     Scheduler "1" --> "1" User : has
-    Scheduler "1" --> "*" Pet : has
+    Scheduler "1" --> "*" Pet : manages
     Scheduler "1" --> "*" Task : manages
     Scheduler "1" --> "*" ScheduledItem : produces
     ScheduledItem "1" --> "1" Task : wraps

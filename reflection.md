@@ -90,11 +90,16 @@ Caching is fine for now, and assuming the daily tasks is around 10 tasks, that w
 **a. What went well**
 
 - What part of this project are you most satisfied with?
+I'm most satisfied with the features implementation and improvements. I gave direction on which features to focus on, how I wanted it to be implemented and scoped out the structure, then AI implemented based on that foundation. It was helpful in flagging bottlenecks and improved those areas. 
 
 **b. What you would improve**
 
 - If you had another iteration, what would you improve or redesign?
+I would love to have some existing sample feedback or example constraints from users' perspective, that would make the problem more interesting and feel more realistic. 
+- I would also add Co-care-giver profile so another person outside of the main user can access care info and help the user to take care of the pet when the main owner is not around. 
 
 **c. Key takeaway**
 
 - What is one important thing you learned about designing systems or working with AI on this project?
+
+It's important to have a solid understanding of the problem, structure the approach clearly, define the main scope before expanding the features. This way, it is easier and faster to implement and solve the main problem, before expanding to other nice-to-have areas.
