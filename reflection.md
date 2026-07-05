@@ -102,4 +102,4 @@ I would love to have some existing sample feedback or example constraints from u
 
 - What is one important thing you learned about designing systems or working with AI on this project?
 
-It's important to have a solid understanding of the problem, structure the approach clearly, define the main scope before expanding the features. This way, it is easier and faster to implement and solve the main problem, before expanding to other nice-to-have areas.
+- It's important to have a solid understanding of the problem, structure the approach clearly, define the main scope before expanding the features. This way, it is easier and faster to implement and solve the main problem, before expanding to other nice-to-have areas.
